@@ -1,0 +1,317 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+
+  body {
+    @apply bg-stone-50 text-stone-900;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  * {
+    @apply border-stone-200;
+    box-sizing: border-box;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-stone-800 ring-offset-2;
+  }
+
+  /* Prevent zoom on input focus on iOS */
+  input, select, textarea {
+    font-size: 16px;
+  }
+
+  /* Ensure images don't overflow */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Mobile-specific fixes */
+  @media (max-width: 640px) {
+    /* Prevent horizontal scroll */
+    body, html {
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+
+    /* Ensure modals don't overflow */
+    [role="dialog"] {
+      max-width: calc(100vw - 2rem);
+      max-height: calc(100vh - 2rem);
+    }
+
+    /* Improve touch targets */
+    button, a, input, select, textarea {
+      min-height: 44px;
+    }
+
+    /* Fix input padding on mobile */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="date"],
+    select,
+    textarea {
+      padding: 12px 16px;
+      font-size: 16px;
+    }
+  }
+}
+
+@layer components {
+  /* Smooth page transitions */
+  .page-transition {
+    animation: pageSlideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes pageSlideIn {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Card hover - smooth lift */
+  .card-hover {
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Button interactions */
+  .btn-primary {
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  /* Fade in */
+  .fade-in {
+    animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Slide up - smooth */
+  .slide-up {
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Scale in - smooth */
+  .scale-in {
+    animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Stagger animations */
+  .stagger-item {
+    animation: staggerIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  @keyframes staggerIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Modal */
+  .modal-overlay {
+    animation: overlayIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes overlayIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .modal-content {
+    animation: modalIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes modalIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  /* Score reveal */
+  .score-reveal {
+    animation: scoreReveal 1s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes scoreReveal {
+    0% {
+      opacity: 0;
+      transform: scale(0.8) translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  /* Option selection */
+  .option-selected {
+    animation: optionSelect 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes optionSelect {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.98);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* Floating shapes */
+  .float-shape {
+    animation: floatShape 12s ease-in-out infinite;
+  }
+
+  .float-shape-delayed {
+    animation: floatShape 14s ease-in-out infinite;
+    animation-delay: -6s;
+  }
+
+  @keyframes floatShape {
+    0%, 100% {
+      transform: translate(0, 0);
+    }
+    33% {
+      transform: translate(15px, -20px);
+    }
+    66% {
+      transform: translate(-10px, 15px);
+    }
+  }
+
+  /* Badge bounce */
+  .bounce-in {
+    animation: bounceIn 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes bounceIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    60% {
+      transform: scale(1.05);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d6d3d1;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a29e;
+}
+
+::selection {
+  background: #292524;
+  color: white;
+}
