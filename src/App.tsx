@@ -5,7 +5,6 @@ import { ToastProvider } from './components/ui';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AnimatedPage from './components/AnimatedPage';
-import SessionTimeout from './components/SessionTimeout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import StudentDashboard from './pages/StudentDashboard';
@@ -37,7 +36,6 @@ function AppRoutes() {
 
   return (
     <Layout>
-      {user && <SessionTimeout />}
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           {/* Public routes */}
