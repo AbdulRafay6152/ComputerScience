@@ -3,14 +3,29 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 
-// Render app immediately
-ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
+// Initialize Firebase and sync data
+const initFirebase = async () => {
+  try {
+    console.log('🔥 Starting Firebase initialization...');
+    const { initializeFirebase, setupRealtimeSync } = await import("./lib/firebaseStore");
+    const { syncFromFirebase } = await import("./lib/store");
+    
+    await initializeFirebase();
+    console.log('✅ Firebase initialized');
+    
+    console.log('🔄 Syncing data from Firebase...');
+    await syncFromFirebase();
+    console.log('✅ Data synced from Firebase');
+    
+    setupRealtimeSync();
+    console.log('✅ Real-time sync active');
+    
+  } catch (error) {
+    console.error('❌ Firebase initialization failed:', error);
+  }
+};
 
-// Initialize Firebase in the background (non-blocking)
-import("./lib/sync").then(({ initializeFirebase, syncFromFirebase, setupRealtimeSync }) => {
-  initializeFirebase()
-    .then(() => syncFromFirebase())
-    .then(() => setupRealtimeSync())
-    .then(() => console.log('✅ Firebase sync initialized'))
-    .catch((error) => console.error('❌ Firebase initialization failed:', error));
-}).catch((error) => console.error('❌ Failed to load sync module:', error));
+initFirebase();
+
+// Render app
+ReactDOM.createRoot(document.getElementById("root")!).render(<App />);

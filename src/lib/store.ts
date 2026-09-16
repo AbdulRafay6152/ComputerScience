@@ -41,9 +41,17 @@ async function initializeData(): Promise<void> {
 // Run initialization and export promise for app startup
 export const dataReady = initializeData();
 
-// Synchronous check for whether data is initialized
-export function isDataInitialized(): boolean {
-  return localStorage.getItem(INIT_KEY) === 'true';
+// ---- SESSION ----
+export function setSession(userId: string): void {
+  localStorage.setItem(SESSION_KEY, userId);
+}
+
+export function getSession(): string | null {
+  return localStorage.getItem(SESSION_KEY);
+}
+
+export function clearSession(): void {
+  localStorage.removeItem(SESSION_KEY);
 }
 
 // ---- USERS ----
@@ -64,6 +72,9 @@ export function createUser(user: User): void {
   const users = getUsers();
   users.push(user);
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  
+  // Sync to Firebase
+  syncToFirebase('users', user.id, user);
 }
 
 export function updateUser(id: string, updates: Partial<Omit<User, 'id' | 'passwordHash'>>): boolean {
@@ -73,6 +84,10 @@ export function updateUser(id: string, updates: Partial<Omit<User, 'id' | 'passw
   
   users[index] = { ...users[index], ...updates };
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  
+  // Sync to Firebase
+  syncToFirebase('users', id, users[index]);
+  
   return true;
 }
 
@@ -87,6 +102,10 @@ export function deleteUser(id: string): boolean {
   const results = getResults();
   const filteredResults = results.filter(r => r.userId !== id);
   localStorage.setItem(RESULTS_KEY, JSON.stringify(filteredResults));
+  
+  // Sync to Firebase
+  deleteFromFirebase('users', id);
+  filteredResults.forEach(r => syncToFirebase('results', r.id, r));
   
   return true;
 }
@@ -105,10 +124,27 @@ export function getTestBySlug(slug: string): Test | undefined {
   return getTests().find(t => t.slug === slug);
 }
 
+export function getTestForStudent(slug: string) {
+  const test = getTestBySlug(slug);
+  if (!test) return undefined;
+  return {
+    ...test,
+    questions: test.questions.map(q => ({
+      id: q.id,
+      testId: q.testId,
+      text: q.text,
+      options: q.options,
+    }))
+  };
+}
+
 export function createTest(test: Test): void {
   const tests = getTests();
   tests.push(test);
   localStorage.setItem(TESTS_KEY, JSON.stringify(tests));
+  
+  // Sync to Firebase
+  syncToFirebase('tests', test.id, test);
 }
 
 export function updateTest(id: string, updates: Partial<Omit<Test, 'id'>>): boolean {
@@ -118,6 +154,10 @@ export function updateTest(id: string, updates: Partial<Omit<Test, 'id'>>): bool
   
   tests[index] = { ...tests[index], ...updates };
   localStorage.setItem(TESTS_KEY, JSON.stringify(tests));
+  
+  // Sync to Firebase
+  syncToFirebase('tests', id, tests[index]);
+  
   return true;
 }
 
@@ -133,22 +173,11 @@ export function deleteTest(id: string): boolean {
   const filteredResults = results.filter(r => r.testId !== id);
   localStorage.setItem(RESULTS_KEY, JSON.stringify(filteredResults));
   
+  // Sync to Firebase
+  deleteFromFirebase('tests', id);
+  filteredResults.forEach(r => syncToFirebase('results', r.id, r));
+  
   return true;
-}
-
-// Get test without correct answers (for student view)
-export function getTestForStudent(slug: string): Omit<Test, 'questions'> & { questions: Omit<Test['questions'][0], 'correctAnswer' | 'explanation'>[] } | undefined {
-  const test = getTestBySlug(slug);
-  if (!test) return undefined;
-  return {
-    ...test,
-    questions: test.questions.map(q => ({
-      id: q.id,
-      testId: q.testId,
-      text: q.text,
-      options: q.options,
-    }))
-  };
 }
 
 // ---- RESULTS ----
@@ -173,6 +202,9 @@ export function createResult(result: TestResult): void {
   const results = getResults();
   results.push(result);
   localStorage.setItem(RESULTS_KEY, JSON.stringify(results));
+  
+  // Sync to Firebase
+  syncToFirebase('results', result.id, result);
 }
 
 export function deleteResult(id: string): boolean {
@@ -181,28 +213,17 @@ export function deleteResult(id: string): boolean {
   if (filtered.length === results.length) return false;
   
   localStorage.setItem(RESULTS_KEY, JSON.stringify(filtered));
+  
+  // Sync to Firebase
+  deleteFromFirebase('results', id);
+  
   return true;
 }
 
-// Check if user already submitted this test
 export function hasUserSubmittedTest(userId: string, testId: string): boolean {
   return getResults().some(r => r.userId === userId && r.testId === testId);
 }
 
-// ---- SESSION ----
-export function setSession(userId: string): void {
-  localStorage.setItem(SESSION_KEY, userId);
-}
-
-export function getSession(): string | null {
-  return localStorage.getItem(SESSION_KEY);
-}
-
-export function clearSession(): void {
-  localStorage.removeItem(SESSION_KEY);
-}
-
-// ---- GRADING (simulates server-side validation) ----
 export function gradeTest(testId: string, answers: Record<string, number>): { score: number; total: number; percentage: number } {
   const test = getTestById(testId);
   if (!test) throw new Error('Test not found');
@@ -218,4 +239,48 @@ export function gradeTest(testId: string, answers: Record<string, number>): { sc
 
   const percentage = Math.round((score / total) * 100);
   return { score, total, percentage };
+}
+
+// ---- FIREBASE SYNC ----
+function syncToFirebase(collection: string, id: string, data: any) {
+  import('./firebaseStore').then(({ saveToFirebase }) => {
+    saveToFirebase(collection, id, data).catch(err => {
+      console.error(`Failed to sync ${collection}/${id} to Firebase:`, err);
+    });
+  }).catch(() => {});
+}
+
+function deleteFromFirebase(collection: string, id: string) {
+  import('./firebaseStore').then(({ deleteFromFirebase }) => {
+    deleteFromFirebase(collection, id).catch(err => {
+      console.error(`Failed to delete ${collection}/${id} from Firebase:`, err);
+    });
+  }).catch(() => {});
+}
+
+// Pull data from Firebase to localStorage
+export async function syncFromFirebase() {
+  try {
+    const { getAll } = await import('./firebaseStore');
+    
+    const [tests, users, results] = await Promise.all([
+      getAll('tests'),
+      getAll('users'),
+      getAll('results'),
+    ]);
+
+    if (tests.length > 0) {
+      localStorage.setItem(TESTS_KEY, JSON.stringify(tests));
+    }
+    if (users.length > 0) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
+    if (results.length > 0) {
+      localStorage.setItem(RESULTS_KEY, JSON.stringify(results));
+    }
+
+    console.log(`✅ Synced from Firebase: ${tests.length} tests, ${users.length} users, ${results.length} results`);
+  } catch (e) {
+    console.error('❌ Sync from Firebase failed:', e);
+  }
 }
